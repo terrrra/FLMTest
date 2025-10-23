@@ -22,7 +22,7 @@ namespace FLMDesktop
                     MainFrame.Navigate(new BranchesPage());
                     break;
                 case "Assignments":
-                    MainFrame.Navigate(new ProductAssignment());
+                    MainFrame.Navigate(new ProductsAssignmentsPage());
                     break;
                 default:
                     MainFrame.Navigate(new StartPage(NavigateTo));

@@ -1,21 +1,109 @@
-﻿<Page x:Class="FLMDesktop.Views.ProductAssignment"
+﻿<Page x:Class="FLMDesktop.Views.ProductsAssignmentsPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-      xmlns:local="clr-namespace:FLMDesktop.Views"
-      mc:Ignorable="d" 
-      d:DesignHeight="450" d:DesignWidth="800"
-      Title="ProductAssignment"
-      Background="{StaticResource BrushSurface}">
-    
-     <Grid Margin="16">
-        <Border Style="{StaticResource Card}">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="Product Assignments" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                <TextBlock Text="(Placeholder) Here you'd place the dual-list assign UI."
-                           Foreground="#6B7280" TextAlignment="Center"/>
-            </StackPanel>
+      Title="Products &amp; Assignments">
+    <Grid Background="#FFF9FAFB" Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="200"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*"/>
+            <!-- branches -->
+            <ColumnDefinition Width="2*"/>
+            <!-- all products -->
+            <ColumnDefinition Width="2*"/>
+            <!-- assigned products -->
+        </Grid.ColumnDefinitions>
+
+        <!-- Header actions -->
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.ColumnSpan="3" Margin="0,0,0,8">
+            <Button Style="{StaticResource BackButton}" Content="Back to Home" Click="Back_Click" />
+            <TextBlock Text="Products &amp; Assignments"
+           Margin="12,0,0,0" FontSize="18" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- BRANCHES -->
+        <Border Style="{StaticResource Card}" Grid.Row="1" Grid.Column="0" Margin="0,0,8,0">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,8">
+                    <TextBlock Text="Branches" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center"/>
+                    <TextBox x:Name="BranchSearch" Width="160" Margin="8,0,0,0" />
+                    <Button Content="Search" Margin="6,0,0,0" Click="BranchSearch_Click"/>
+                </StackPanel>
+                <DataGrid x:Name="BranchesGrid" IsReadOnly="True" AutoGenerateColumns="False"
+                          SelectionMode="Single" SelectionChanged="BranchesGrid_SelectionChanged">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
+                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
+                        <DataGridTextColumn Header="Telephone" Binding="{Binding TelephoneNumber}" Width="140"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
         </Border>
-     </Grid>
+
+        <!-- ALL PRODUCTS -->
+        <Border Style="{StaticResource Card}" Grid.Row="1" Grid.Column="1" Margin="4,0">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,8">
+                    <TextBlock Text="All Products" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center"/>
+                    <TextBox x:Name="ProductSearch" Width="160" Margin="8,0,0,0"/>
+                    <Button Content="Search" Margin="6,0,0,0" Click="ProductSearch_Click"/>
+                    <StackPanel Orientation="Horizontal" Margin="16,0,0,0">
+                        <Button Content="New"   Margin="0,0,6,0" Click="ProdNew_Click"/>
+                        <Button Content="Edit"  Margin="0,0,6,0" Click="ProdEdit_Click"/>
+                        <Button Content="Delete"             Click="ProdDelete_Click"/>
+                    </StackPanel>
+                </StackPanel>
+                <DataGrid x:Name="AllProductsGrid" IsReadOnly="True" AutoGenerateColumns="False"
+                          SelectionMode="Single">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
+                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
+                        <DataGridCheckBoxColumn Header="Weighted" Binding="{Binding WeightedItem}" Width="90"/>
+                        <DataGridTextColumn Header="Price" Binding="{Binding SuggestedSellingPrice}" Width="100"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
+
+        <!-- ASSIGNED PRODUCTS -->
+        <Border Style="{StaticResource Card}" Grid.Row="1" Grid.Column="2" Margin="8,0,0,0">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,8">
+                    <TextBlock Text="Assigned to Branch" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center"/>
+                    <Button Content="Assign →" Margin="12,0,6,0" Click="Assign_Click"/>
+                    <Button Content="← Unassign" Click="Unassign_Click"/>
+                </StackPanel>
+                <DataGrid x:Name="AssignedGrid" IsReadOnly="True" AutoGenerateColumns="False"
+                          SelectionMode="Single">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
+                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
+                        <DataGridCheckBoxColumn Header="Weighted" Binding="{Binding WeightedItem}" Width="90"/>
+                        <DataGridTextColumn Header="Price" Binding="{Binding SuggestedSellingPrice}" Width="100"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
+
+        <!-- SINGLE PRODUCT DETAILS -->
+        <Border Style="{StaticResource Card}" Grid.Row="2" Grid.ColumnSpan="3" Margin="0,8,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="200"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="Selected Product:" FontWeight="SemiBold" Margin="0,0,8,0"
+                           VerticalAlignment="Center"/>
+                <TextBlock x:Name="SelectedProductText" Grid.Column="1" VerticalAlignment="Center"/>
+                <TextBlock Text="Selected Branch:" Grid.Column="2" Margin="16,0,8,0" VerticalAlignment="Center"/>
+                <TextBlock x:Name="SelectedBranchText" Grid.Column="3" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </Grid>
 </Page>
