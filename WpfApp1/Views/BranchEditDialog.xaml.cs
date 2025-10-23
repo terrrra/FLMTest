@@ -26,7 +26,7 @@ namespace FLMDesktop.Views
             Branch = branch ?? throw new ArgumentNullException(nameof(branch));
             TxtName.Text = Branch.Name;
             TxtTel.Text = Branch.TelephoneNumber ?? string.Empty;
-            DpOpen.SelectedDate = Branch.OpenDate ?? DateTime.Today;
+            DpOpen.SelectedDate = Branch.OpenDate;
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;

@@ -41,6 +41,10 @@
                     <Button Style="{StaticResource ToolbarButton}" Content="New" Click="New_Click"/>
                     <Button Style="{StaticResource ToolbarButton}" Content="Edit" Click="Edit_Click"/>
                     <Button Style="{StaticResource ToolbarButton}" Content="Delete" Click="Delete_Click"/>
+                    <Button Content="Import…" Margin="8,0,6,0"  Click="ImportBranches_Click"/>
+                    <Button Content="Export…" Click="ExportBranches_Click"/>
+
+
                 </StackPanel>
             </DockPanel>
         </Border>

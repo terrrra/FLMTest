@@ -6,6 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Win32;
+using FLMDesktop.Services;
 
 namespace FLMDesktop.Views
 {
@@ -135,6 +137,41 @@ namespace FLMDesktop.Views
             {
                 MessageBox.Show($"Delete failed: {ex.GetBaseException().Message}", "Delete",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void ImportBranches_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new OpenFileDialog { Filter = "All Supported|*.csv;*.json;*.xml|CSV|*.csv|JSON|*.json|XML|*.xml" };
+            if (dlg.ShowDialog() != true) return;
+
+            try
+            {
+                var svc = new ImportExportService(AppServices.ConnectionString);
+                var count = await svc.ImportBranchesAsync(dlg.FileName);      // upsert
+                await LoadAsync();
+                MessageBox.Show($"Imported {count} branches.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Import failed: {ex.GetBaseException().Message}");
+            }
+        }
+
+        private async void ExportBranches_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new SaveFileDialog { Filter = "CSV|*.csv|JSON|*.json|XML|*.xml", FileName = "Branch" };
+            if (dlg.ShowDialog() != true) return;
+
+            try
+            {
+                var svc = new ImportExportService(AppServices.ConnectionString);
+                var count = await svc.ExportBranchesAsync(dlg.FileName);
+                MessageBox.Show($"Exported {count} branches to {System.IO.Path.GetFileName(dlg.FileName)}.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Export failed: {ex.GetBaseException().Message}");
             }
         }
     }

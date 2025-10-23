@@ -16,7 +16,7 @@ public class Branch
 
     public Branch() { }
 
-    public Branch(int id, string name, string telephoneNumber, DateTime? openDate)
+    public Branch(int id, string name, string telephoneNumber, DateTime openDate)
     {
         Id = id; Name = name; TelephoneNumber = telephoneNumber; OpenDate = openDate;
 

@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
-//Make sure that the db image is running in the container, this should make this flow. Because of time...
+//If you followed the docker db steps, Make sure that the db image is running in the container, this should make this flow. Because of time...
 namespace FLMDesktop.Services
 {
     public class BranchService : IBranchService
