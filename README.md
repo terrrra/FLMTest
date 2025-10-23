@@ -45,10 +45,10 @@ docker run -d --name bp-mssql ^
 }
 
 # 4) Create the database/tables (one of these)
------------------------------------------------------------------------------------------------------------
+
 Option 1 (quickest): run the provided SQL snippet (I have created a built-in EnsureCreated this should help us create the database if connection string is given)
 In SQL Server Object Explorer → New Query against your server:
-----------------------------------------------------------------------------------------------------------------
+
 IF DB_ID('BranchProductDb') IS NULL CREATE DATABASE BranchProductDb;
 GO
 USE BranchProductDb;
@@ -62,19 +62,19 @@ CREATE TABLE BranchProduct (BranchId INT NOT NULL, ProductId INT NOT NULL,
   CONSTRAINT PK_BranchProduct PRIMARY KEY(BranchId, ProductId),
   CONSTRAINT FK_BP_B FOREIGN KEY(BranchId) REFERENCES Branch(Id) ON DELETE CASCADE,
   CONSTRAINT FK_BP_P FOREIGN KEY(ProductId) REFERENCES Product(Id) ON DELETE CASCADE);
------------------------------------------------------------------------------------------------------------------
+
 
 # Option 2 (if migrations are present):
 
 dotnet tool update -g dotnet-ef
 dotnet ef database update --project .\FLMDesktop\FLMDesktop.csproj --connection "<your connection string>"
--------------------------------------------------------------------------------------------------------------------
+
 # 5) Build & run
 
 In Visual Studio: Build → Rebuild Solution, then Start.
 
 First run creates/uses BranchProductDb. If empty, the Branches page shows no rows.
--------------------------------------------------------------------------------------------------------------------
+
 # 6) Using the app (what to click)
 
 Start screen: big cards:
@@ -100,12 +100,12 @@ Import/Export Mappings to load/save Branch–Product links (CSV/JSON/XML)
 Sample files for import (put anywhere, then choose in the file dialogs):
 
 Branch.csv / .json / .xml  - This will not work for this iteration Effort was taken regardless.
---------------------------------------------------------------------------------------------------------
+
 # 7) Logs (optional) - This was the last on the list and did not make it to our project
 
 Serilog writes to Logs\log-<date>.txt beside the exe (if configured).
 Helpful if something fails (connection string, import parse, etc).
-------------------------------------------------------------------------------------------------------------------------
+
 # 8. Make Sure you have the using CsvHelper nuget Installed; 
 
 # 9) Common issues I Faced (fast fixes)
