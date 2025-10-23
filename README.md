@@ -31,10 +31,10 @@ Set the connection string. Two easy choices:
 
 Then start SQL Server in Docker:
 
-docker run -d --name bp-mssql ^
-  -e "ACCEPT_EULA=Y" ^
-  -e "MSSQL_SA_PASSWORD=YourStrong!Passw0rd" ^
-  -p 1435:1433 ^
+docker run -d --name bp-mssql 
+  -e "ACCEPT_EULA=Y" 
+  -e "MSSQL_SA_PASSWORD=YourStrong!Passw0rd" 
+  -p 1435:1433 
   mcr.microsoft.com/mssql/server:2022-latest
 
 
