@@ -106,7 +106,8 @@ Branch.csv / .json / .xml  - This will not work for this iteration Effort was ta
 Serilog writes to Logs\log-<date>.txt beside the exe (if configured).
 Helpful if something fails (connection string, import parse, etc).
 
-# 8. Make Sure you have the using CsvHelper nuget Installed; 
+# 8. nuget Installs
+Make Sure you have the CsvHelper  Installed; 
 
 # 9) Common issues I Faced (fast fixes)
 
