@@ -1,7 +1,7 @@
 # FLMTest
 
 
-1) Prerequisites (Windows)
+# 1) Prerequisites (Windows)
 
 .NET 8 SDK (or just Visual Studio 2022/2025 with “.NET desktop dev”)
 
@@ -11,7 +11,7 @@ Docker Desktop or
 
 Local SQL Server (Developer/Express)
 
-2) Get the code
+# 2) Get the code
 
 Unzip the solution folder (e.g., FLMTest).
 
@@ -23,12 +23,11 @@ Open appsettings.json (in the WPF project).
 
 Set the connection string. Two easy choices:
 
-A) Using Docker (recommended)
+# A) Using Docker (recommended)
 
 "ConnectionStrings": {
   "DefaultConnection": "Server=localhost,1435;Database=BranchProductDb;User ID=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True"
 }
-
 
 Then start SQL Server in Docker:
 
@@ -39,13 +38,13 @@ docker run -d --name bp-mssql ^
   mcr.microsoft.com/mssql/server:2022-latest
 
 
-B) Using local SQL Server
+# B) Using local SQL Server
 
 "ConnectionStrings": {
   "DefaultConnection": "Server=localhost;Database=BranchProductDb;Trusted_Connection=True;TrustServerCertificate=True"
 }
 
-4) Create the database/tables (one of these)
+# 4) Create the database/tables (one of these)
 -----------------------------------------------------------------------------------------------------------
 Option 1 (quickest): run the provided SQL snippet (I have created a built-in EnsureCreated this should help us create the database if connection string is given)
 In SQL Server Object Explorer → New Query against your server:
@@ -65,18 +64,18 @@ CREATE TABLE BranchProduct (BranchId INT NOT NULL, ProductId INT NOT NULL,
   CONSTRAINT FK_BP_P FOREIGN KEY(ProductId) REFERENCES Product(Id) ON DELETE CASCADE);
 -----------------------------------------------------------------------------------------------------------------
 
-Option 2 (if migrations are present):
+# Option 2 (if migrations are present):
 
 dotnet tool update -g dotnet-ef
 dotnet ef database update --project .\FLMDesktop\FLMDesktop.csproj --connection "<your connection string>"
 -------------------------------------------------------------------------------------------------------------------
-5) Build & run
+# 5) Build & run
 
 In Visual Studio: Build → Rebuild Solution, then Start.
 
 First run creates/uses BranchProductDb. If empty, the Branches page shows no rows.
 -------------------------------------------------------------------------------------------------------------------
-6) Using the app (what to click)
+# 6) Using the app (what to click)
 
 Start screen: big cards:
 
@@ -102,14 +101,14 @@ Sample files for import (put anywhere, then choose in the file dialogs):
 
 Branch.csv / .json / .xml  - This will not work for this iteration Effort was taken regardless.
 --------------------------------------------------------------------------------------------------------
-7) Logs (optional) - This was the last on the list and did not make it to our project
+# 7) Logs (optional) - This was the last on the list and did not make it to our project
 
 Serilog writes to Logs\log-<date>.txt beside the exe (if configured).
 Helpful if something fails (connection string, import parse, etc).
 ------------------------------------------------------------------------------------------------------------------------
-8. Make Sure you have the using CsvHelper nuget Installed; 
+# 8. Make Sure you have the using CsvHelper nuget Installed; 
 
-9) Common issues I Faced (fast fixes)
+# 9) Common issues I Faced (fast fixes)
 
 “ConnectionString has not been initialized” → ensure appsettings.json exists in output (csproj includes CopyToOutputDirectory=Always), and DefaultConnection is valid.
 
