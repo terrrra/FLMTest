@@ -1,0 +1,38 @@
+﻿<Window x:Class="FLMDesktop.Views.BranchEditDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Edit Branch" Width="420" Height="320"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="120"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="Name" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
+            <TextBox x:Name="TxtName" Grid.Row="0" Grid.Column="1" Margin="8,6"/>
+
+            <TextBlock Text="Telephone" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
+            <TextBox x:Name="TxtTel" Grid.Row="1" Grid.Column="1" Margin="8,6"/>
+
+            <TextBlock Text="Open Date" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
+            <DatePicker x:Name="DpOpen" Grid.Row="2" Grid.Column="1" Margin="8,6"/>
+        </Grid>
+
+        <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Cancel" Margin="0,0,8,0" Click="Cancel_Click"/>
+            <Button Content="Save" Background="#2563EB" Foreground="White" Click="Save_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
