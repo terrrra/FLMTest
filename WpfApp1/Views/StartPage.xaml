@@ -27,7 +27,12 @@
                     Tag="Assets/branches.png"
                     FontWeight="Bold"
                     Height="360" Margin="16"
-                    Click="Branches_Click"/>
+                    Click="Branches_Click">
+                <Button.Background>
+                    <ImageBrush ImageSource="/Assets/product.png"/>
+                </Button.Background>
+            </Button>
+
 
             <!-- Products & Assignments -->
             <Button Grid.Column="1"
@@ -36,7 +41,11 @@
                     ToolTip="Manage products and assign to branches"
                     Tag="Assets/products.png"
                     Height="360" Margin="16"
-                    Click="Assignments_Click"/>
+                    Click="Assignments_Click">
+                <Button.Background>
+                    <ImageBrush ImageSource="/Assets/product.png"/>
+                </Button.Background>
+            </Button>
         </Grid>
 
         <TextBlock Grid.Row="1" Text="Tip: click a card to drill down"

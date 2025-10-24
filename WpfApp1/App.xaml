@@ -10,6 +10,15 @@
         <SolidColorBrush x:Key="BrushAccent" Color="{StaticResource AccentColor}"/>
         <SolidColorBrush x:Key="BrushAccentLight" Color="{StaticResource AccentColorLight}"/>
 
+        <!-- Image Resources -->
+        <BitmapImage x:Key="BranchImg"
+               UriSource="pack://application:,,,/Assets/branchPic.png"/>
+        <BitmapImage x:Key="ProductImg"
+               UriSource="pack://application:,,,/Assets/product.png"/>
+
+        <ImageBrush x:Key="BranchBg" ImageSource="{StaticResource BranchImg}" Stretch="UniformToFill"/>
+        <ImageBrush x:Key="ProductBg" ImageSource="{StaticResource ProductImg}" Stretch="UniformToFill"/>
+        
         <!-- Theme brushes -->
         <Color x:Key="Surface">#F7F7F9</Color>
         <Color x:Key="CardColor">#FFFFFFFF</Color>
