@@ -25,6 +25,7 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder model)
     {
+        // Data/AppDbContext.cs  inside OnModelCreating(ModelBuilder model)
         model.Entity<Branch>().ToTable("Branch");
         model.Entity<Product>().ToTable("Product");
 
@@ -32,8 +33,17 @@ public class AppDbContext : DbContext
         {
             e.ToTable("BranchProduct");
             e.HasKey(x => new { x.BranchId, x.ProductId });
-            e.HasOne(x => x.Branch).WithMany(b => b.BranchProducts).HasForeignKey(x => x.BranchId);
-            e.HasOne(x => x.Product).WithMany(p => p.BranchProducts).HasForeignKey(x => x.ProductId);
+
+            e.HasOne(x => x.Branch)
+             .WithMany(b => b.BranchProducts)
+             .HasForeignKey(x => x.BranchId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(x => x.Product)
+             .WithMany(p => p.BranchProducts)
+             .HasForeignKey(x => x.ProductId)
+             .OnDelete(DeleteBehavior.Cascade);
         });
+
     }
 }

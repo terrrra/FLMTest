@@ -9,6 +9,7 @@ namespace FLMDesktop.Data;
 
 public static class DbBootstrap
 {
+       //I created this class to assist whith testing the db connection and to load to the grid on startup. This will change and probably not be used later
     public static async Task EnsureReadyAsync(string connectionString, CancellationToken ct = default)
     {
         var csb = new SqlConnectionStringBuilder(connectionString);

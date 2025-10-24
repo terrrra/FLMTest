@@ -11,7 +11,7 @@ public class Branch
     public string? TelephoneNumber { get; set; }
     public DateTime? OpenDate { get; set; }
 
-    // ADD THIS
+    // ADD THIS For EFCore to be able to assign the correct FK and Composites
     public ICollection<BranchProduct> BranchProducts { get; set; } = new List<BranchProduct>();
 
     public Branch() { }

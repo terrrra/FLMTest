@@ -21,120 +21,213 @@ namespace FLMDesktop.Services
         private readonly string _conn;
         public ImportExportService(string connectionString) => _conn = connectionString;
 
-        // ---------- Planning to make this as part of my repo publicly available once finished with it ----------
-        public Task<int> ImportProductsAsync(string path) => ImportAsync(path, ImportKind.Products);
-        public Task<int> ImportBranchesAsync(string path) => ImportAsync(path, ImportKind.Branches);
-        public Task<int> ImportMappingsAsync(string path, int branchId) => ImportAsync(path, ImportKind.Mappings, branchId);
+        // ---------- Planning to make this a generic Bulk File Importer. This is why the Persistance Logic resides here ----------
+        public Task<int> ImportProductsAsync(string path)=> ImportProductsCoreAsync(path, Path.GetExtension(path).ToLowerInvariant());
+        public Task<int> ImportBranchesAsync(string path) => ImportBranchesCoreAsync(path, Path.GetExtension(path).ToLowerInvariant());
+        public Task<int> ImportMappingsAsync(string path, int branchId)=> ImportMappingsCoreAsync(path, Path.GetExtension(path).ToLowerInvariant(), branchId);
 
         public Task<int> ExportProductsAsync(string path) => ExportAsync(path, ExportKind.Products);
         public Task<int> ExportBranchesAsync(string path) => ExportAsync(path, ExportKind.Branches);
         public Task<int> ExportMappingsAsync(string path, int branchId) => ExportAsync(path, ExportKind.Mappings, branchId);
 
         // ---------- Import ----------
-        private async Task<int> ImportAsync(string path, ImportKind kind, int branchId = 0)
+        private async Task<int> ImportProductsCoreAsync(string path, string ext)
         {
-            var ext = Path.GetExtension(path).ToLowerInvariant();
+            var rows = ext switch
+            {
+                ".json" => ReadJson<ProductRow>(path),
+                ".xml" => ReadXml<ProductXmlWrapper, ProductRow>(path, x => x.Products),
+                ".csv" => ReadCsv<ProductRow>(path),
+                _ => throw new InvalidOperationException("Unsupported file type.")
+            };
+
             using var db = new AppDbContext(_conn);
+            await db.Database.OpenConnectionAsync();
 
-            if (kind == ImportKind.Products)
+            int count = 0;
+            var strategy = db.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
             {
-                var items = ext switch
-                {
-                    ".json" => ReadJson<ProductRow>(path),
-                    ".xml" => ReadXml<ProductXmlWrapper, ProductRow>(path, x => x.Products),
-                    ".csv" => ReadCsv<ProductRow>(path),
-                    _ => throw new InvalidOperationException("Unsupported file type.")
-                };
+                await using var tx = await db.Database.BeginTransactionAsync();
 
-                int upserts = 0;
-                foreach (var r in items)
-                {
-                    var entity = await db.Products.FirstOrDefaultAsync(p => p.Id == r.ID);
-                    if (entity == null)
-                    {
-                        entity = new Product { Id = r.ID };
-                        db.Products.Add(entity);
-                    }
-                    entity.Name = r.Name ?? $"Product {r.ID}";
-                    entity.WeightedItem = ParseBool(r.WeightedItem);
-                    entity.SuggestedSellingPrice = ParseDecimal(r.SuggestedSellingPrice);
+                var incomingIds = rows.Where(r => r.ID > 0).Select(r => r.ID).Distinct().ToList();
+                var existingIds = await db.Products.AsNoTracking()
+                    .Where(p => incomingIds.Contains(p.Id))
+                    .Select(p => p.Id).ToListAsync();
 
-                    upserts++;
+                // UPDATE existing
+                foreach (var r in rows)
+                {
+                    var p = await db.Products.FirstOrDefaultAsync(x => x.Id == r.ID);
+                    if (p is null) continue;
+                    p.Name = r.Name ?? p.Name;
+                    p.WeightedItem = ParseBool(r.WeightedItem);
+                    p.SuggestedSellingPrice = ParseDecimal(r.SuggestedSellingPrice);
+                    count++;
                 }
                 await db.SaveChangesAsync();
-                return upserts;
-            }
 
-            if (kind == ImportKind.Branches)
-            {
-                var items = ext switch
+                // INSERT without Id
+                foreach (var r in rows.Where(x => x.ID == 0))
                 {
-                    ".json" => ReadJson<BranchRow>(path),
-                    ".xml" => ReadXml<BranchXmlWrapper, BranchRow>(path, x => x.Branches),
-                    ".csv" => ReadCsv<BranchRow>(path),
-                    _ => throw new InvalidOperationException("Unsupported file type.")
-                };
-
-                int upserts = 0;
-                foreach (var r in items)
-                {
-                    var entity = await db.Branches.FirstOrDefaultAsync(b => b.Id == r.ID);
-                    if (entity == null)
+                    db.Products.Add(new Product
                     {
-                        entity = new Branch { Id = r.ID };
-                        db.Branches.Add(entity);
-                    }
-                    entity.Name = r.Name ?? $"Branch {r.ID}";
-                    entity.TelephoneNumber = string.IsNullOrWhiteSpace(r.TelephoneNumber) ? null : r.TelephoneNumber;
-                    entity.OpenDate = ParseDate(r.OpenDate) ?? DateTime.MinValue;
-
-                    upserts++;
+                        Name = r.Name ?? "Product",
+                        WeightedItem = ParseBool(r.WeightedItem),
+                        SuggestedSellingPrice = ParseDecimal(r.SuggestedSellingPrice)
+                    });
+                    count++;
                 }
                 await db.SaveChangesAsync();
-                return upserts;
-            }
 
-            // Mappings
-            {
-                var rows = ext switch
+                // INSERT with explicit Ids
+                var newExplicitIds = incomingIds.Except(existingIds).ToList();
+                if (newExplicitIds.Count > 0)
                 {
-                    ".json" => ReadJson<MappingRow>(path),
-                    ".xml" => ReadXml<MappingXmlWrapper, MappingRow>(path, x => x.Mappings),
-                    ".csv" => ReadCsv<MappingRow>(path),
-                    _ => throw new InvalidOperationException("Unsupported file type.")
-                };
+                    await db.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT [dbo].[Product] ON");
 
-                var toApply = branchId > 0 ? rows.Where(r => r.BranchID == branchId) : rows.Where(r => r.BranchID > 0);
-
-                // use transaction; wipe & replace mappings for this branch when branchId specified
-                using var tx = await db.Database.BeginTransactionAsync();
-                int count = 0;
-
-                if (branchId > 0)
-                {
-                    var existing = await db.BranchProducts.Where(x => x.BranchId == branchId).ToListAsync();
-                    db.BranchProducts.RemoveRange(existing);
-                    await db.SaveChangesAsync();
-                }
-
-                foreach (var r in toApply)
-                {
-                    // skip incomplete rows
-                    if (r.BranchID <= 0 || r.ProductID <= 0) continue;
-
-                    var exists = await db.BranchProducts.AnyAsync(x => x.BranchId == r.BranchID && x.ProductId == r.ProductID);
-                    if (!exists)
+                    foreach (var r in rows.Where(x => x.ID > 0 && newExplicitIds.Contains(x.ID)))
                     {
-                        await db.BranchProducts.AddAsync(new BranchProduct { BranchId = r.BranchID, ProductId = r.ProductID });
+                        db.Products.Add(new Product
+                        {
+                            Id = r.ID,
+                            Name = r.Name ?? $"Product {r.ID}",
+                            WeightedItem = ParseBool(r.WeightedItem),
+                            SuggestedSellingPrice = ParseDecimal(r.SuggestedSellingPrice)
+                        });
                         count++;
                     }
+
+                    await db.SaveChangesAsync();
+                    await db.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT [dbo].[Product] OFF");
+                }
+
+                await tx.CommitAsync();
+            });
+
+            await db.Database.CloseConnectionAsync();
+            return count;
+        }
+        private async Task<int> ImportMappingsCoreAsync(string path, string ext, int branchId = 0)
+        {
+            var rows = ext switch
+            {
+                ".json" => ReadJson<MappingRow>(path),
+                ".xml" => ReadXml<MappingXmlWrapper, MappingRow>(path, x => x.Mappings),
+                ".csv" => ReadCsv<MappingRow>(path),
+                _ => throw new InvalidOperationException("Unsupported file type.")
+            };
+
+            using var db = new AppDbContext(_conn);
+            var strategy = db.Database.CreateExecutionStrategy();
+
+            int count = 0;
+            await strategy.ExecuteAsync(async () =>
+            {
+                await using var tx = await db.Database.BeginTransactionAsync();
+
+                var input = branchId > 0 ? rows.Where(r => r.BranchID == branchId) : rows;
+
+                foreach (var r in input)
+                {
+                    bool branchExists = await db.Branches.AnyAsync(b => b.Id == r.BranchID);
+                    bool productExists = await db.Products.AnyAsync(p => p.Id == r.ProductID);
+                    if (!branchExists || !productExists) continue;
+
+                    bool already = await db.BranchProducts.AnyAsync(x => x.BranchId == r.BranchID && x.ProductId == r.ProductID);
+                    if (already) continue;
+
+                    db.BranchProducts.Add(new BranchProduct { BranchId = r.BranchID, ProductId = r.ProductID });
+                    count++;
                 }
 
                 await db.SaveChangesAsync();
                 await tx.CommitAsync();
-                return count;
-            }
+            });
+
+            return count;
         }
+        private async Task<int> ImportBranchesCoreAsync(string path, string ext)
+        {
+            var rows = ext switch
+            {
+                ".json" => ReadJson<BranchRow>(path),
+                ".xml" => ReadXml<BranchXmlWrapper, BranchRow>(path, x => x.Branches),
+                ".csv" => ReadCsv<BranchRow>(path),
+                _ => throw new InvalidOperationException("Unsupported file type.")
+            };
+
+            using var db = new AppDbContext(_conn);
+            await db.Database.OpenConnectionAsync();
+
+            int count = 0;
+            var strategy = db.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                await using var tx = await db.Database.BeginTransactionAsync();
+
+                var incomingIds = rows.Where(r => r.ID > 0).Select(r => r.ID).Distinct().ToList();
+                var existingIds = await db.Branches.AsNoTracking()
+                    .Where(b => incomingIds.Contains(b.Id))
+                    .Select(b => b.Id).ToListAsync();
+
+                // UPDATE existing
+                foreach (var r in rows)
+                {
+                    var b = await db.Branches.FirstOrDefaultAsync(x => x.Id == r.ID);
+                    if (b is null) continue;
+
+                    b.Name = r.Name ?? b.Name;
+                    b.TelephoneNumber = string.IsNullOrWhiteSpace(r.TelephoneNumber) ? null : r.TelephoneNumber;
+                    b.OpenDate = ParseDate(r.OpenDate);
+                    count++;
+                }
+                await db.SaveChangesAsync();
+
+                // INSERT without Id (let SQL generate)
+                foreach (var r in rows.Where(x => x.ID == 0))
+                {
+                    db.Branches.Add(new Branch
+                    {
+                        Name = r.Name ?? "Branch",
+                        TelephoneNumber = string.IsNullOrWhiteSpace(r.TelephoneNumber) ? null : r.TelephoneNumber,
+                        OpenDate = ParseDate(r.OpenDate)
+                    });
+                    count++;
+                }
+                await db.SaveChangesAsync();
+
+                // INSERT with explicit Ids
+                var newExplicitIds = incomingIds.Except(existingIds).ToList();
+                if (newExplicitIds.Count > 0)
+                {
+                    await db.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT [dbo].[Branch] ON");
+
+                    foreach (var r in rows.Where(x => x.ID > 0 && newExplicitIds.Contains(x.ID)))
+                    {
+                        db.Branches.Add(new Branch
+                        {
+                            Id = r.ID,
+                            Name = r.Name ?? $"Branch {r.ID}",
+                            TelephoneNumber = string.IsNullOrWhiteSpace(r.TelephoneNumber) ? null : r.TelephoneNumber,
+                            OpenDate = ParseDate(r.OpenDate)
+                        });
+                        count++;
+                    }
+
+                    await db.SaveChangesAsync();
+                    await db.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT [dbo].[Branch] OFF");
+                }
+
+                await tx.CommitAsync();
+            });
+
+            await db.Database.CloseConnectionAsync();
+            return count;
+        }
+
 
         // ---------- Export ----------
         private async Task<int> ExportAsync(string path, ExportKind kind, int branchId = 0)
@@ -152,7 +245,9 @@ namespace FLMDesktop.Services
                         Name = p.Name,
                         WeightedItem = p.WeightedItem ? "Y" : "N",
                         SuggestedSellingPrice = p.SuggestedSellingPrice
-                    }).ToListAsync();
+                            .ToString("0.##", CultureInfo.InvariantCulture)
+                    })
+                    .ToListAsync();
 
                 WriteByExt(path, ext, data, new ProductXmlWrapper { Products = data });
                 return data.Count;
@@ -168,9 +263,10 @@ namespace FLMDesktop.Services
                         Name = b.Name,
                         TelephoneNumber = b.TelephoneNumber,
                         OpenDate = b.OpenDate.HasValue
-        ?                          b.OpenDate.Value.ToString("yyyy'/'MM'/'dd", CultureInfo.InvariantCulture)
-        :                          string.Empty
-                    }).ToListAsync();
+                            ? b.OpenDate.Value.ToString("yyyy'/'MM'/'dd", CultureInfo.InvariantCulture)
+                            : string.Empty
+                    })
+                    .ToListAsync();
 
                 WriteByExt(path, ext, data, new BranchXmlWrapper { Branches = data });
                 return data.Count;
@@ -196,7 +292,11 @@ namespace FLMDesktop.Services
             var s = (raw ?? "").Trim().ToLowerInvariant();
             return s is "y" or "1" or "true";
         }
-
+        private static async Task SetIdentityInsertAsync(DbContext db, string table, bool on)
+        {
+            var sql = $"SET IDENTITY_INSERT [dbo].[{table}] {(on ? "ON" : "OFF")}";
+            await db.Database.ExecuteSqlRawAsync(sql);
+        }
         private static decimal ParseDecimal(object? raw)
         {
             // handles "", ".", ".99", "9.99"

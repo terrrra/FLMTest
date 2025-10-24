@@ -28,12 +28,12 @@ namespace FLMDesktop.Views
             try
             {
                 // branches
-                var b = await AppServices.Branches.GetAllAsync();
+                var b = await InitializeServices.Branches.GetAllAsync();
                 _branches = new ObservableCollection<Branch>(b);
                 BranchesGrid.ItemsSource = _branches;
 
                 // all products
-                var p = await AppServices.Products.GetAllAsync();
+                var p = await InitializeServices.Products.GetAllAsync();
                 _allProds = new ObservableCollection<Product>(p);
                 AllProductsGrid.ItemsSource = _allProds;
             }
@@ -52,7 +52,7 @@ namespace FLMDesktop.Views
 
             try
             {
-                var list = await AppServices.Assignments.GetProductsForBranchAsync(br.Id);
+                var list = await InitializeServices.Assignments.GetProductsForBranchAsync(br.Id);
                 _assigned = new ObservableCollection<Product>(list);
                 AssignedGrid.ItemsSource = _assigned;
             }
@@ -84,7 +84,7 @@ namespace FLMDesktop.Views
         private async void BranchSearch_Click(object sender, RoutedEventArgs e)
         {
             var q = (BranchSearch.Text ?? "").Trim().ToLowerInvariant();
-            var all = await AppServices.Branches.GetAllAsync();
+            var all = await InitializeServices.Branches.GetAllAsync();
             var filtered = string.IsNullOrWhiteSpace(q) ? all :
                 all.Where(b => (b.Name?.ToLowerInvariant().Contains(q) ?? false) ||
                                (b.TelephoneNumber?.ToLowerInvariant().Contains(q) ?? false))
@@ -96,7 +96,7 @@ namespace FLMDesktop.Views
         private async void ProductSearch_Click(object sender, RoutedEventArgs e)
         {
             var q = (ProductSearch.Text ?? "").Trim().ToLowerInvariant();
-            var all = await AppServices.Products.GetAllAsync();
+            var all = await InitializeServices.Products.GetAllAsync();
             var filtered = string.IsNullOrWhiteSpace(q) ? all :
                 all.Where(p => (p.Name?.ToLowerInvariant().Contains(q) ?? false))
                    .ToList();
@@ -118,7 +118,7 @@ namespace FLMDesktop.Views
 
             try
             {
-                await AppServices.Assignments.AddAssignmentAsync(br.Id, p.Id);
+                await InitializeServices.Assignments.AddAssignmentAsync(br.Id, p.Id);
                 await LoadAssignedAsync();
             }
             catch (Exception ex)
@@ -140,7 +140,7 @@ namespace FLMDesktop.Views
 
             try
             {
-                await AppServices.Assignments.RemoveAssignmentAsync(br.Id, p.Id);
+                await InitializeServices.Assignments.RemoveAssignmentAsync(br.Id, p.Id);
                 await LoadAssignedAsync();
             }
             catch (Exception ex)
@@ -162,7 +162,7 @@ namespace FLMDesktop.Views
 
         private async Task RefreshProductsAsync()
         {
-            var p = await AppServices.Products.GetAllAsync();
+            var p = await InitializeServices.Products.GetAllAsync();
             _allProds = new ObservableCollection<Product>(p);
             AllProductsGrid.ItemsSource = _allProds;
             UpdateSelectedProductLabel();
@@ -181,7 +181,7 @@ namespace FLMDesktop.Views
             {
                 try
                 {
-                    await AppServices.Products.CreateAsync(draft);
+                    await InitializeServices.Products.CreateAsync(draft);
                     await RefreshProductsAsync();
                     await LoadAssignedAsync();
                 }
@@ -201,7 +201,7 @@ namespace FLMDesktop.Views
             }
 
             // fetch fresh
-            var fresh = await AppServices.Products.GetByIdAsync(p.Id);
+            var fresh = await InitializeServices.Products.GetByIdAsync(p.Id);
             if (fresh is null)
             {
                 MessageBox.Show("Product not found.");
@@ -214,7 +214,7 @@ namespace FLMDesktop.Views
             {
                 try
                 {
-                    await AppServices.Products.UpdateAsync(fresh);
+                    await InitializeServices.Products.UpdateAsync(fresh);
                     await RefreshProductsAsync();
                     await LoadAssignedAsync();
                 }
@@ -239,7 +239,7 @@ namespace FLMDesktop.Views
 
             try
             {
-                await AppServices.Products.DeleteAsync(p.Id);
+                await InitializeServices.Products.DeleteAsync(p.Id);
                 await RefreshProductsAsync();
                 await LoadAssignedAsync();
             }

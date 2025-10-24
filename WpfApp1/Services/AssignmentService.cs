@@ -23,21 +23,69 @@ namespace FLMDesktop.Services
                 .OrderBy(p => p.Name)
                 .ToListAsync(ct);
         }
-
-        public async Task SetAssignmentsAsync(int branchId, IEnumerable<int> productIds, CancellationToken ct = default)
+        public async Task AssignAsync(int branchId, int productId)
         {
             using var db = new AppDbContext(_conn);
-            using var tx = await db.Database.BeginTransactionAsync(ct);
 
-            var existing = await db.BranchProducts.Where(x => x.BranchId == branchId).ToListAsync(ct);
-            db.BranchProducts.RemoveRange(existing);
+            var exists = await db.BranchProducts
+                .AnyAsync(bp => bp.BranchId == branchId && bp.ProductId == productId);
+            if (exists) return;
 
-            var distinct = productIds.Distinct().ToArray();
-            var toAdd = distinct.Select(pid => new BranchProduct { BranchId = branchId, ProductId = pid });
-            await db.BranchProducts.AddRangeAsync(toAdd, ct);
+            db.BranchProducts.Add(new BranchProduct { BranchId = branchId, ProductId = productId });
+            await db.SaveChangesAsync();
+        }
 
-            await db.SaveChangesAsync(ct);
-            await tx.CommitAsync(ct);
+        public async Task SetAssignmentsAsync(
+    int branchId, IEnumerable<int> productIds, CancellationToken ct = default)
+        {
+            // ✅ Set Assignments will safely assign products to Items
+            var targetIds = (productIds ?? Enumerable.Empty<int>()).Distinct().ToArray();
+
+            using var db = new AppDbContext(_conn);
+            var strategy = db.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                await using var tx = await db.Database.BeginTransactionAsync(ct);
+
+                // keep only product IDs that actually exist
+                var validIds = await db.Products
+                    .Where(p => targetIds.Contains(p.Id))
+                    .Select(p => p.Id)
+                    .ToListAsync(ct);
+
+                var currentIds = await db.BranchProducts
+                    .Where(bp => bp.BranchId == branchId)
+                    .Select(bp => bp.ProductId)
+                    .ToListAsync(ct);
+
+                var toAdd = validIds.Except(currentIds).ToArray();
+                var toRemove = currentIds.Except(validIds).ToArray();
+
+                if (toAdd.Length > 0)
+                {
+                    var links = toAdd.Select(pid => new BranchProduct { BranchId = branchId, ProductId = pid });
+                    await db.BranchProducts.AddRangeAsync(links, ct);
+                }
+
+#if NET8_0_OR_GREATER
+                if (toRemove.Length > 0)
+                    await db.BranchProducts
+                        .Where(bp => bp.BranchId == branchId && toRemove.Contains(bp.ProductId))
+                        .ExecuteDeleteAsync(ct);
+#else
+        if (toRemove.Length > 0)
+        {
+            var links = await db.BranchProducts
+                .Where(bp => bp.BranchId == branchId && toRemove.Contains(bp.ProductId))
+                .ToListAsync(ct);
+            db.BranchProducts.RemoveRange(links);
+        }
+#endif
+
+                await db.SaveChangesAsync(ct);
+                await tx.CommitAsync(ct);
+            });
         }
 
         public async Task AddAssignmentAsync(int branchId, int productId, CancellationToken ct = default)

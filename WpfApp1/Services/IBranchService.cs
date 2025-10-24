@@ -9,7 +9,7 @@ namespace FLMDesktop.Services
     {
         Task<List<Branch>> GetAllAsync(CancellationToken ct = default);
         Task<Branch?> GetByIdAsync(int id, CancellationToken ct = default);
-        Task<Branch> CreateAsync(Branch branch, CancellationToken ct = default);
+        Task<int> CreateAsync(Branch branch, CancellationToken ct = default);
         Task UpdateAsync(Branch branch, CancellationToken ct = default);
         Task DeleteAsync(int id, CancellationToken ct = default);
     }

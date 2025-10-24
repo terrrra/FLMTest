@@ -14,7 +14,12 @@ namespace FLMDesktop.Services
     public class BranchService : IBranchService
     {
         private readonly string _conn;
-        public BranchService(string connectionString) => _conn = connectionString;
+        private readonly IAssignmentService _assignments;
+        public BranchService(string connectionString,IAssignmentService? assignments = null)
+        {
+            _conn = connectionString;
+            _assignments = assignments ?? new AssignmentService(_conn);
+        }
 
         public async Task<List<Branch>> GetAllAsync(CancellationToken ct = default)
         {
@@ -29,18 +34,28 @@ namespace FLMDesktop.Services
             return await db.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id, ct);
         }
 
-        public async Task<Branch> CreateAsync(Branch branch, CancellationToken ct = default)
+        public async Task<int> CreateAsync(Branch draft, CancellationToken ct = default)
         {
-            Validate(branch);
+            if (draft == null) throw new ArgumentNullException(nameof(draft));
+
+            // Normalize inputs
+            draft.Name = (draft.Name ?? "").Trim();
+            if (draft.Name.Length == 0)
+                throw new InvalidOperationException("Branch name is required.");
 
             using var db = new AppDbContext(_conn);
+            db.Branches.Add(draft);
+            await db.SaveChangesAsync(ct);          // draft.Id is generated here
 
-            // Make absolutely sure EF treats this as a new row
-            branch.Id = 0;
-            db.Entry(branch).State = EntityState.Added;
+            // If caller passed any initial assignments, apply them safely
+            var productIds =
+                draft.BranchProducts?.Select(bp => bp.ProductId)  // might be null
+                ?? Enumerable.Empty<int>();                       // never null
 
-            await db.SaveChangesAsync(ct);
-            return branch;
+            if (productIds.Any())
+                await _assignments.SetAssignmentsAsync(draft.Id, productIds, ct);
+
+            return draft.Id;
         }
 
         public async Task UpdateAsync(Branch branch, CancellationToken ct = default)

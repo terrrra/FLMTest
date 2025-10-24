@@ -33,7 +33,7 @@ namespace FLMDesktop.Views
         {
             try
             {
-                var list = await AppServices.Branches.GetAllAsync();
+                var list = await InitializeServices.Branches.GetAllAsync();
                 _items = new ObservableCollection<Branch>((System.Collections.Generic.IEnumerable<Branch>)list);
                 BranchesGrid.ItemsSource = _items;
             }
@@ -79,7 +79,7 @@ namespace FLMDesktop.Views
             {
                 try
                 {
-                    await AppServices.Branches.CreateAsync(draft);
+                    await InitializeServices.Branches.CreateAsync(draft);
                     await LoadAsync();
                 }
                 catch (Exception ex)
@@ -98,7 +98,7 @@ namespace FLMDesktop.Views
             }
 
             // fetch fresh copy from DB
-            var entity = await AppServices.Branches.GetByIdAsync(selected.Id);
+            var entity = await InitializeServices.Branches.GetByIdAsync(selected.Id);
             if (entity is null) { MessageBox.Show("That branch no longer exists."); await LoadAsync(); return; }
 
             var dlg = new BranchEditDialog(entity) { Owner = Window.GetWindow(this) };
@@ -106,7 +106,7 @@ namespace FLMDesktop.Views
             {
                 try
                 {
-                    await AppServices.Branches.UpdateAsync(entity);
+                    await InitializeServices.Branches.UpdateAsync(entity);
                     await LoadAsync();
                 }
                 catch (Exception ex)
@@ -130,7 +130,7 @@ namespace FLMDesktop.Views
 
             try
             {
-                await AppServices.Branches.DeleteAsync(selected.Id);
+                await InitializeServices.Branches.DeleteAsync(selected.Id);
                 await LoadAsync();
             }
             catch (Exception ex)
@@ -142,12 +142,12 @@ namespace FLMDesktop.Views
 
         private async void ImportBranches_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new OpenFileDialog { Filter = "All Supported|*.csv;*.json;*.xml|CSV|*.csv|JSON|*.json|XML|*.xml" };
+            var dlg = new OpenFileDialog { Filter = "All Supported|*.csv" };
             if (dlg.ShowDialog() != true) return;
 
             try
             {
-                var svc = new ImportExportService(AppServices.ConnectionString);
+                var svc = new ImportExportService(InitializeServices.ConnectionString);
                 var count = await svc.ImportBranchesAsync(dlg.FileName);      // upsert
                 await LoadAsync();
                 MessageBox.Show($"Imported {count} branches.");
@@ -165,7 +165,7 @@ namespace FLMDesktop.Views
 
             try
             {
-                var svc = new ImportExportService(AppServices.ConnectionString);
+                var svc = new ImportExportService(InitializeServices.ConnectionString);
                 var count = await svc.ExportBranchesAsync(dlg.FileName);
                 MessageBox.Show($"Exported {count} branches to {System.IO.Path.GetFileName(dlg.FileName)}.");
             }
