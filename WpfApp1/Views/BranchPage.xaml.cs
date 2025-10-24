@@ -142,7 +142,7 @@ namespace FLMDesktop.Views
 
         private async void ImportBranches_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new OpenFileDialog { Filter = "All Supported|*.csv" };
+            var dlg = new OpenFileDialog { Filter = "All Supported|*.csv;*.json;*.xml|CSV|*.csv|JSON|*.json|XML|*.xml\" " };
             if (dlg.ShowDialog() != true) return;
 
             try
