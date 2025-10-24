@@ -29,7 +29,7 @@
                     Height="360" Margin="16"
                     Click="Branches_Click">
                 <Button.Background>
-                    <ImageBrush ImageSource="/Assets/product.png"/>
+                    <ImageBrush ImageSource="/Assets/branches.png"/>
                 </Button.Background>
             </Button>
 

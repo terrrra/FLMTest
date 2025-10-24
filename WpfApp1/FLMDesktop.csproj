@@ -5,9 +5,13 @@
 		<UseWPF>true</UseWPF>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
+	<ItemGroup>
+	  <None Remove="Assets\branches.png" />
+	  <None Remove="Assets\product.png" />
+	</ItemGroup>
 
 	<ItemGroup>
-		<Resource Include="Assets\branchPic.png" />
+		<Resource Include="Assets\branches.png" />
 		<Resource Include="Assets\product.png" />
 	</ItemGroup>
 	

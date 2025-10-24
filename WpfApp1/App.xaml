@@ -12,7 +12,7 @@
 
         <!-- Image Resources -->
         <BitmapImage x:Key="BranchImg"
-               UriSource="pack://application:,,,/Assets/branchPic.png"/>
+               UriSource="pack://application:,,,/Assets/branches.png"/>
         <BitmapImage x:Key="ProductImg"
                UriSource="pack://application:,,,/Assets/product.png"/>
 
