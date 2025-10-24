@@ -3,6 +3,8 @@ using CsvHelper.Configuration;
 using FLMDesktop.Data;
 using FLMDesktop.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Formats.Asn1;
@@ -18,8 +20,14 @@ namespace FLMDesktop.Services
 {
     public class ImportExportService
     {
+        
+        private static readonly ILogger _log = Log.ForContext<ImportExportService>();
+
         private readonly string _conn;
         public ImportExportService(string connectionString) => _conn = connectionString;
+
+        private readonly string _entry = "Has been initiated";
+        private readonly string _exit = "is completd";
 
         // ---------- Planning to make this a generic Bulk File Importer. This is why the Persistance Logic resides here ----------
         public Task<int> ImportProductsAsync(string path)=> ImportProductsCoreAsync(path, Path.GetExtension(path).ToLowerInvariant());
@@ -33,6 +41,7 @@ namespace FLMDesktop.Services
         // ---------- Import ----------
         private async Task<int> ImportProductsCoreAsync(string path, string ext)
         {
+            _log.Information($"{nameof(ImportProductsCoreAsync)}: {_entry}");
             var rows = ext switch
             {
                 ".json" => ReadJson<ProductRow>(path),
@@ -107,10 +116,12 @@ namespace FLMDesktop.Services
             });
 
             await db.Database.CloseConnectionAsync();
+            _log.Information($"Method {nameof(ImportProductsCoreAsync)}: {_exit}");
             return count;
         }
         private async Task<int> ImportMappingsCoreAsync(string path, string ext, int branchId = 0)
         {
+            _log.Information($"{nameof(ImportMappingsCoreAsync)}: {_exit}");
             var rows = ext switch
             {
                 ".json" => ReadJson<MappingRow>(path),
@@ -145,11 +156,13 @@ namespace FLMDesktop.Services
                 await db.SaveChangesAsync();
                 await tx.CommitAsync();
             });
-
+            _log.Information($"{nameof(ImportMappingsCoreAsync)}: {_exit}");
             return count;
         }
         private async Task<int> ImportBranchesCoreAsync(string path, string ext)
         {
+            _log.Information($"{nameof(ImportBranchesCoreAsync)}: {_entry}");
+            
             var rows = ext switch
             {
                 ".json" => ReadJson<BranchRow>(path),
@@ -225,6 +238,7 @@ namespace FLMDesktop.Services
             });
 
             await db.Database.CloseConnectionAsync();
+            _log.Information($"{nameof(ImportBranchesCoreAsync)}: {_exit}");
             return count;
         }
 
@@ -232,6 +246,7 @@ namespace FLMDesktop.Services
         // ---------- Export ----------
         private async Task<int> ExportAsync(string path, ExportKind kind, int branchId = 0)
         {
+            _log.Information($"{nameof(ExportAsync)}: {_entry}");
             var ext = Path.GetExtension(path).ToLowerInvariant();
             using var db = new AppDbContext(_conn);
 
@@ -269,6 +284,8 @@ namespace FLMDesktop.Services
                     .ToListAsync();
 
                 WriteByExt(path, ext, data, new BranchXmlWrapper { Branches = data });
+                
+                _log.Information($"{nameof(ExportAsync)}: {_exit}");
                 return data.Count;
             }
 
@@ -282,6 +299,8 @@ namespace FLMDesktop.Services
                     .ToListAsync();
 
                 WriteByExt(path, ext, data, new MappingXmlWrapper { Mappings = data });
+                
+                _log.Information($"{nameof(ExportAsync)}: {_exit}");
                 return data.Count;
             }
         }
@@ -292,11 +311,7 @@ namespace FLMDesktop.Services
             var s = (raw ?? "").Trim().ToLowerInvariant();
             return s is "y" or "1" or "true";
         }
-        private static async Task SetIdentityInsertAsync(DbContext db, string table, bool on)
-        {
-            var sql = $"SET IDENTITY_INSERT [dbo].[{table}] {(on ? "ON" : "OFF")}";
-            await db.Database.ExecuteSqlRawAsync(sql);
-        }
+
         private static decimal ParseDecimal(object? raw)
         {
             // handles "", ".", ".99", "9.99"
